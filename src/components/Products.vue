@@ -1,5 +1,5 @@
 <script setup>
-import {ref, onMounted} from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api  from '../services/api';
 
@@ -10,6 +10,13 @@ const products= ref([])
 const selectedProduct = ref(null)
 const showProductDialog = ref(false)
 
+
+watch(showProductDialog, (val) => {
+    if (!val) {
+        quantity.value = null
+        error.value = ''
+    }
+})
 
 async function fetchProducts(){
 
@@ -36,6 +43,10 @@ const quantity = ref(null)
 const token = localStorage.getItem( "authToken")
 
 async function buy(productId){
+      if(!quantity.value || quantity.value < 1){
+        error.value = 'Please select a quantity'
+        return
+    }
     if(token){
         const userId = JSON.parse(localStorage.getItem("user")).id
         const formData = new FormData()
@@ -116,16 +127,31 @@ onMounted(() => {
                             <v-card-text> {{selectedProduct.description}} </v-card-text>
                             <v-card-title>{{selectedProduct.price}}</v-card-title>
                            
-                                <v-row>
+                                <v-row align="center">
                                     <v-col md="4">Quantity</v-col>
                                     <v-col md="4">
-                                        <v-number-input  v-model.number="quantity" :min="1" :max="10"  control-variant="split" density="compact" > </v-number-input>
+                                      <div class="d-flex align-center">
+                                        <v-btn 
+                                            icon="mdi-minus" 
+                                            density="compact" 
+                                            variant="outlined"
+                                            @click="quantity > 1 ? quantity-- : null"
+                                        ></v-btn>
+                                        <span class="mx-3 text-body-1">{{ quantity ?? 0 }}</span>
+                                        <v-btn 
+                                            icon="mdi-plus" 
+                                            density="compact" 
+                                            variant="outlined"
+                                            @click="quantity < 10 ? quantity++ : null"
+                                        ></v-btn>
+                                    </div>
                                     </v-col>
                                 </v-row>
                         </v-card-item>
                         <v-card-actions>
                             <v-btn elevation="4" color="primary" variant="elevated" @click="buy(selectedProduct.id)" > Buy </v-btn>
                         </v-card-actions>
+                        <v-alert v-if="error" type="error" class="mb-4">{{ error }}</v-alert>
                         <v-alert v-if="message" type="info" class="mb-4">{{ message }}</v-alert>
                 </v-col>
             </v-row>    
